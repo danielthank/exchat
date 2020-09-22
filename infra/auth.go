@@ -7,10 +7,10 @@ import (
 )
 
 type (
-	ProfileRepository struct {
+	profileRepository struct {
 		*SqlHandler
 	}
-	ProfileGorm struct {
+	profileGorm struct {
 		gorm.Model
 		UserID      string
 		DisplayName string
@@ -20,17 +20,17 @@ type (
 )
 
 func NewProfileRepository(sqlHandler *SqlHandler) repository.ProfileRepository {
-	profileRepository := &ProfileRepository{sqlHandler}
-	profileRepository.Conn.AutoMigrate(&ProfileGorm{})
+	profileRepository := &profileRepository{sqlHandler}
+	profileRepository.Conn.AutoMigrate(&profileGorm{})
 	return profileRepository
 }
 
-func (t *ProfileRepository) Create(profile *model.Profile, accessToken string) error {
-	if err := t.Conn.Create(&ProfileGorm{
+func (t *profileRepository) Create(profile *model.Profile) error {
+	if err := t.Conn.Create(&profileGorm{
 		UserID:      profile.UserID,
 		DisplayName: profile.DisplayName,
 		PictureURL:  profile.PictureURL,
-		AccessToken: accessToken,
+		AccessToken: profile.AccessToken,
 	}).Error; err != nil {
 		return err
 	}
