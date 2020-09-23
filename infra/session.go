@@ -16,6 +16,14 @@ func NewSessionService(redisHandler *RedisHandler) service.SessionService {
 	return sessionService
 }
 
+func (t *sessionService) Get(r *http.Request, sessionID string) (*sessions.Session, error) {
+	session, err := t.Store.Get(r, sessionID)
+	if err != nil {
+		return nil, err
+	}
+	return session, nil
+}
+
 func (t *sessionService) Save(r *http.Request, w http.ResponseWriter, sessionID string, payload map[string]interface{}) error {
 	session, err := t.Get(r, sessionID)
 	if err != nil {
@@ -30,10 +38,14 @@ func (t *sessionService) Save(r *http.Request, w http.ResponseWriter, sessionID 
 	return nil
 }
 
-func (t *sessionService) Get(r *http.Request, sessionID string) (*sessions.Session, error) {
-	session, err := t.RedisHandler.Store.Get(r, sessionID)
+func (t *sessionService) Delete(r *http.Request, w http.ResponseWriter, sessionID string) error {
+	session, err := t.Get(r, sessionID)
 	if err != nil {
-		return nil, err
+		return err
 	}
-	return session, nil
+	session.Options.MaxAge = -1
+	if err = session.Save(r, w); err != nil {
+		return err
+	}
+	return nil
 }

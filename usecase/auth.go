@@ -1,11 +1,13 @@
 package usecase
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
 	"os"
 
+	"github.com/danielthank/exchat-server/domain/model"
 	"github.com/danielthank/exchat-server/domain/repository"
 	"github.com/danielthank/exchat-server/domain/service"
 	"golang.org/x/oauth2"
@@ -16,6 +18,9 @@ type AuthUsecase interface {
 	GetAccessToken(state string, code string) (string, error)
 	SaveState(state string, r *http.Request, w http.ResponseWriter) error
 	CheckState(state string, r *http.Request) error
+	DeleteSesssion(r *http.Request, w http.ResponseWriter) error
+	GetProfileByAccessToken(accessToken string) (*model.Profile, error)
+	PersistProfile(profile *model.Profile) error
 }
 
 type authUsecase struct {
@@ -74,6 +79,44 @@ func (usecase *authUsecase) CheckState(state string, r *http.Request) error {
 	}
 	if session.Values["state"] != state {
 		return errors.New("invalid oauth state")
+	}
+	return nil
+}
+
+func (usecase *authUsecase) DeleteSesssion(r *http.Request, w http.ResponseWriter) error {
+	if err := usecase.sessionService.Delete(r, w, usecase.sessionID); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (usecase *authUsecase) GetProfileByAccessToken(accessToken string) (*model.Profile, error) {
+	profile := &model.Profile{}
+	profile.AccessToken = accessToken
+
+	req, err := http.NewRequest("GET", usecase.profileEndpoint, nil)
+	if err != nil {
+		return nil, errors.New("failed creating request")
+	}
+
+	req.Header.Add("Authorization", "Bearer "+accessToken)
+	client := http.Client{}
+	response, err := client.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("failed getting user info: %s", err.Error())
+	}
+	defer response.Body.Close()
+
+	err = json.NewDecoder(response.Body).Decode(profile)
+	if err != nil {
+		return nil, fmt.Errorf("failed reading response body: %s", err.Error())
+	}
+	return profile, nil
+}
+
+func (usecase *authUsecase) PersistProfile(profile *model.Profile) error {
+	if err := usecase.profileRepository.Create(profile); err != nil {
+		return err
 	}
 	return nil
 }

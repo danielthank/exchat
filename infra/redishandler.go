@@ -19,9 +19,10 @@ func NewRedisHandler(keyPrefix string) *RedisHandler {
 	})
 
 	var redisStore *redisstore.RedisStore
+	var err error
 
 	if keyPrefix != "" {
-		redisStore, err := redisstore.NewRedisStore(redisClient)
+		redisStore, err = redisstore.NewRedisStore(redisClient)
 		if err != nil {
 			log.Fatal("failed to create redis store")
 		}

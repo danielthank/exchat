@@ -30,8 +30,8 @@ func InjectWSHandler() *handler.WSHandler {
 
 func InjectSessionService() service.SessionService {
 	redisHandler := InjectRedis("session_")
-	authSessionService := infra.NewSessionService(redisHandler)
-	return authSessionService
+	sessionService := infra.NewSessionService(redisHandler)
+	return sessionService
 }
 
 func InjectAuthUsecase() usecase.AuthUsecase {

@@ -3,8 +3,8 @@ package handler
 import (
 	"crypto/sha256"
 	"encoding/hex"
-	"log"
 	"net/http"
+	"os"
 
 	"github.com/danielthank/exchat-server/usecase"
 	"github.com/gin-gonic/gin"
@@ -45,14 +45,28 @@ func (handler *AuthHandler) Callback(c *gin.Context) {
 	code := c.Query("code")
 	if err := handler.authUsecase.CheckState(state, c.Request); err != nil {
 		c.Error(err).SetType(gin.ErrorTypePublic)
+		return
 	}
 	accessToken, err := handler.authUsecase.GetAccessToken(state, code)
 	if err != nil {
 		c.Error(err).SetType(gin.ErrorTypePublic)
+		return
 	}
-	log.Println(accessToken)
+	profile, err := handler.authUsecase.GetProfileByAccessToken(accessToken)
+	if err != nil {
+		c.Error(err).SetType(gin.ErrorTypePublic)
+		return
+	}
+	if err := handler.authUsecase.PersistProfile(profile); err != nil {
+		c.Error(err).SetType(gin.ErrorTypePublic)
+		return
+	}
+	c.Redirect(http.StatusFound, os.Getenv("LOGIN_REDIRECT_URL"))
 }
 
 func (handler *AuthHandler) Logout(c *gin.Context) {
-
+	if err := handler.authUsecase.DeleteSesssion(c.Request, c.Writer); err != nil {
+		c.Error(err).SetType(gin.ErrorTypePublic)
+	}
+	c.Redirect(http.StatusFound, os.Getenv("LOGOUT_REDIRECT_URL"))
 }

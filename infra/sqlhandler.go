@@ -10,7 +10,7 @@ import (
 )
 
 type SqlHandler struct {
-	Conn *gorm.DB
+	*gorm.DB
 }
 
 func NewSqlHandler() *SqlHandler {
@@ -20,12 +20,10 @@ func NewSqlHandler() *SqlHandler {
 		os.Getenv("DB_NAME"),
 	)
 
-	conn, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
+	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
 	if err != nil {
 		log.Fatal("failed to init db")
 	}
 
-	return &SqlHandler{
-		Conn: conn,
-	}
+	return &SqlHandler{db}
 }
